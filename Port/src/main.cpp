@@ -1135,7 +1135,7 @@ bool glassOk = g_glassPass.Init(g_dx.device, g_width, g_height, 3, kSuperSample)
                 // The rim's alpha, measured: 0.47 where the normal is vertical in light
                 // and 0.22 in dark. The hairline's slope against |normal.y| is what makes
                 // a horizontal edge's line vanish in dark appearance.
-                float rim = (g_darkMode ? 0.22f : 0.47f) * p.rimScale;
+                float rim = (g_darkMode ? 0.13f : 0.28f) * p.rimScale;
                 float shadow = p.shadow ? (g_darkMode ? 0.42f : 0.20f) : 0.0f;
                 g_glassPass.DrawPanel(g_dx.context, p.r.x, p.r.y, p.r.w, p.r.h,
                                       p.radius, tint, refract, rim, shadow, 16.0f, 0.0f,

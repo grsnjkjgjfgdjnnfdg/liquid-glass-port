@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #define NOMINMAX
 #include <Windows.h>
 #include <d3d11.h>
@@ -168,12 +168,15 @@ float4 PSLens(PanelOut i) : SV_Target {
     // has a bright rim (0.95 white, 4-5 pt) and almost no dark line, so the two terms
     // swap emphasis at ctl = 1.
     float aBlack = lerp((0.86 - edge.x * ny) * edgeK, 0.10f, ctl);
-    float hairBox = 1.0 - smoothstep(0.14, 0.20, abs(dp - 0.52));
+    // Fitted: the line is centred 0.367 pt OUTSIDE the body (dp is positive inward), so
+    // it sits over the backdrop - which is why its absolute level is the same in light
+    // and dark appearance.
+    float hairBox = 1.0 - smoothstep(0.056, 0.399, abs(dp + 0.367));
     float lineA = saturate(aBlack * hairBox);
 
     // The body is inset 0.95 pt with a 0.30 pt ramp: the capture's fill only settles two
     // device pixels inside the boundary, and its line sits in between.
-    float cov = saturate(0.5 - (d + edge.w) / 0.30) * saturate(extra.x);
+    float cov = saturate(0.5 - d / 0.505) * saturate(extra.x);
     if (cov <= 0.0) {
         // Outside: the soft cast shadow, and the hairline if it reaches out here.
         float soft = saturate(1.0 - d / 14.0);
@@ -278,7 +281,7 @@ float4 PSLens(PanelOut i) : SV_Target {
     // A control carries a wide bright rim - the capture's knob is 0.95 white over 4-5 pt,
     // where a panel's is a one-pixel edge - so the rim tail widens with ctl.
     float rx = dp - lerp(0.6f, 1.6f, ctl);
-    float rim = rx < 0.0 ? exp(-rx * rx / lerp(0.18f, 0.9f, ctl)) : exp(-rx / lerp(1.05f, 2.6f, ctl));
+    float rim = rx < 0.0 ? exp(-rx * rx / lerp(0.10f, 0.9f, ctl)) : exp(-rx / lerp(1.05f, 1.5f, ctl));
     float3 lin = SrgbToLinear(col);
     lin += aWhite * (1.0 - lin) * rim;
     col = LinearToSrgb(lin);
@@ -402,7 +405,7 @@ float4 PSLens(PanelOut i) : SV_Target {
             // pass reads blurA, which is already at the blur's own resolution.
             // 1.2x spacing: measured, the capture's .regular frost leaves an interior
             // std of 2.26 against a page that swings 166 levels, where the port's blur
-            // still leaked Â±8 levels at the grid's 20 pt period.
+            // still leaked Ã‚Â±8 levels at the grid's 20 pt period.
             Pass(ctx, hsrc, blurARTV, 1.0f / (float)bw, 0.0f, it == 0 ? 1.0f : 0.0f);
             Pass(ctx, blurASRV, blurBRTV, 0.0f, 1.0f / (float)bh, 0.0f);
         }

@@ -145,8 +145,11 @@ const PanelSpec kPanels[] = {
       Rgba(0.448f, 0.154f, 0.175f), Rgba(0.451f, 0.154f, 0.175f), true, 1.0f },
 };
 
-constexpr float kPanelX = 23.3f;
-constexpr float kPanelW = 355.0f;
+// Fitted per side from the capture: the left edge is at 24.10 and the right at
+// 377.90, so the port's 23.3/355 was 0.8 pt out on the left and 0.7 on the right.
+// With a one-device-pixel hairline, that asymmetry alone is worth 20 RMS levels.
+constexpr float kPanelX = 24.10f;
+constexpr float kPanelW = 353.80f;
 constexpr float kPanelR = 26.5f;
 
 } // namespace glassdemo
