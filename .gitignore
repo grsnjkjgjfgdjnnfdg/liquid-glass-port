@@ -1,0 +1,8 @@
+build/
+*.png
+!docs/**/*.png
+fonts/FontsGenerated.h
+Inter-*.ttf
+*.user
+*.suo
+.vs/

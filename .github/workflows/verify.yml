@@ -1,0 +1,47 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Inter and generate the font header
+        shell: pwsh
+        run: |
+          $ver = "4.1"
+          $zip = "$env:RUNNER_TEMP\inter.zip"
+          Invoke-WebRequest -Uri "https://github.com/rsms/inter/releases/download/v$ver/Inter-$ver.zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\inter"
+          $root = Get-ChildItem "$env:RUNNER_TEMP\inter" -Recurse -Filter "Inter-Regular.ttf" | Select-Object -First 1
+          $dir = $root.DirectoryName
+          python tools/make_font_data.py `
+            --regular  "$dir\Inter-Regular.ttf" `
+            --semibold "$dir\Inter-SemiBold.ttf" `
+            --bold     "$dir\Inter-Bold.ttf" `
+            --out      "fonts\FontsGenerated.h"
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+          & $msbuild Port\SwiftUiPort.vcxproj /p:Configuration=Release /p:Platform=x64 /v:minimal /nologo
+
+      - name: Render every screen and keep the captures
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path shots | Out-Null
+          foreach ($screen in @("settings","controls","glass","refraction","sheet")) {
+            & .\Port\build\SwiftUiPort.exe --ios --screen $screen --shot "shots\$screen.png" --shot-at 2.0
+          }
+          Get-ChildItem shots | Select-Object Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screens-3x
+          path: shots/
