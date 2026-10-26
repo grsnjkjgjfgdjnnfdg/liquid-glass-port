@@ -481,7 +481,9 @@ struct SwitchState {
     // springs, the leading one at damping 0.28, which pushed the knob 8.8 pt past its
     // rest position and is what read as "too bouncy". The liquid feel comes from the
     // swell below, not from the travel.
-    SwitchState() : t(0, 0.30f, 0.85f), pos(0, 0.20f, 1.0f), press(0, 0.18f, 0.9f) {}
+    // Travel 0.20 -> 0.15 s: measured, the capture's knob is within 0.33 pt of its
+    // final centre 133 ms after the flip, where a 0.20 s spring is still 2.17 pt out.
+    SwitchState() : t(0, 0.30f, 0.85f), pos(0, 0.15f, 1.0f), press(0, 0.18f, 0.9f) {}
 };
 
 inline void DrawSwitch(UI& ui, const Rect& r, bool& on, SwitchState& st, float dt) {
@@ -515,18 +517,11 @@ inline void DrawSwitch(UI& ui, const Rect& r, bool& on, SwitchState& st, float d
     const float t = std::clamp(st.t.value, 0.0f, 1.0f);
     const float p = std::clamp(st.pos.value, 0.0f, 1.0f);
 
-    // Track: colour crossfades; the off fill is measurably darker than a plain
-    // systemFill so it is its own token.
-    Rgba trackCol = ui.theme.switchOff.Lerp(ui.theme.switchOn, t);
-    ui.FillRounded(track, h * 0.5f, trackCol);
-
-    // The knob is not a shape that slides: measured from the runtime it also swells
-    // 37 x 24 -> 47.03 x 30.84 and back, uniformly (aspect 1.542 -> 1.525) and about
-    // its own centre - which is why the measured container y goes 2 -> -1.42 while
-    // its height grows 6.84 pt, exactly half the growth on each side. Driving that
-    // off speed reproduces both the amplitude and the timing: the swell peaks with
-    // the deceleration and is gone ~210 ms after the flip, and it is what makes the
-    // motion read as liquid rather than as a sliding pill.
+    // The knob does not simply slide: measured from the runtime it swells 37 x 24 ->
+    // 47.03 x 30.84 about its own centre while it travels, and *the track spreads with
+    // it* - the control's bounding box goes 63.00 x 28.33 -> 71.00 x 39.33 at the peak,
+    // which a 47 pt knob inside a 63 pt pill cannot produce. Driving both off the
+    // spring's speed reproduces the amplitude and the 210 ms return.
     const float knobW = ios::kSwitchKnobW;
     const float knobH = ios::kSwitchKnobH;
     const float inset = ios::kSwitchInset;
@@ -534,10 +529,21 @@ inline void DrawSwitch(UI& ui, const Rect& r, bool& on, SwitchState& st, float d
     const float speed = std::fabs(st.pos.velocity) * travel;      // pt/s
     const float swell = std::min(ios::kSwitchSwell, speed * ios::kSwitchSwellK);
     const float swellN = swell / ios::kSwitchSwell;
+
+    // Track: colour crossfades; the off fill is measurably darker than a plain
+    // systemFill so it is its own token. It also blooms during the flip, about its own
+    // centre, so the whole control breathes instead of just the knob.
+    Rgba trackCol = ui.theme.switchOff.Lerp(ui.theme.switchOn, t);
+    Rect bloomed(track.x - ios::kSwitchBloomW * swellN,
+                 track.y - ios::kSwitchBloomH * swellN,
+                 track.w + ios::kSwitchBloomW * swellN * 2.0f,
+                 track.h + ios::kSwitchBloomH * swellN * 2.0f);
+    ui.FillRounded(bloomed, bloomed.h * 0.5f, trackCol);
+
     const float kw = knobW * (1.0f + swell);
     const float kh = knobH * (1.0f + swell);
     const float cx = track.x + inset + knobW * 0.5f + p * travel;
-    Rect knob(cx - kw * 0.5f, track.y + (h - kh) * 0.5f, kw, kh);
+    Rect knob(cx - kw * 0.5f, bloomed.y + (bloomed.h - kh) * 0.5f, kw, kh);
     st.lastW = kw;
     st.lastX = knob.x - track.x;
     st.lastT = t;

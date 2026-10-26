@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <cstdint>
 #include <algorithm>
 #include <cmath>
@@ -143,7 +143,7 @@ constexpr float kSwitchKnobW   = 37.0f;   // the pill knob, NOT a circle (layer 
 constexpr float kSwitchKnobH   = 24.0f;
 constexpr float kSwitchInset   = 2.0f;    // top/bottom/trailing
 
-constexpr float kSliderThumbW  = 36.3f;   // same pill family as the switch knob
+constexpr float kSliderThumbW  = 37.0f;   // the capture's 57.35 / 1.55 = 36.97
 constexpr float kSliderThumbH  = 24.0f;
 constexpr float kTrackH        = 6.0f;
 constexpr float kSliderRowH    = 31.0f;   // accessibility height of UISlider
@@ -159,7 +159,7 @@ constexpr float kThumbGlassVibrancy = 1.0f;
 constexpr float kThumbGlassFrost    = 0.6f;   // measured: the track edge softens ~1 px
 // Solved from the measured peak pixel (172,192,213) over a (0,134,254) track:
 // 0.55 of white and 0.38 of the base chroma, i.e. the knob both lifts and desaturates.
-constexpr float kKnobGlassTint      = 0.55f;
+constexpr float kKnobGlassTint      = 0.50f;   // interior 46 % of the way from track to white
 constexpr float kKnobGlassRim       = 0.9f;
 constexpr float kKnobGlassRefract   = 0.35f;
 constexpr float kKnobGlassVibrancy  = 0.38f;
@@ -167,7 +167,11 @@ constexpr float kKnobGlassFrost     = 1.2f;
 // Peak uniform swell of the switch knob during a flip: measured 37 x 24 -> 47.03 x
 // 30.84, i.e. +27 %. It is driven by speed, so this is the cap and `...SwellK`
 // converts pt/s of knob speed into it (peak speed is ~250 pt/s on a 22 pt travel).
-constexpr float kSwitchSwell       = 0.30f;
+constexpr float kSwitchSwell       = 0.278f;  // 47.03 x 30.84, not 48.09 x 31.19
+// The track spreads with the knob: the control's bounding box grows 8 x 11 pt at the
+// peak, which a 47 pt knob inside a 63 pt pill cannot account for.
+constexpr float kSwitchBloomW      = 4.0f;    // half of the +8 pt
+constexpr float kSwitchBloomH      = 5.5f;    // half of the +11 pt
 constexpr float kSwitchSwellK      = 0.00118f;
 
 constexpr float kSegH          = 32.0f;   // measured 511..543

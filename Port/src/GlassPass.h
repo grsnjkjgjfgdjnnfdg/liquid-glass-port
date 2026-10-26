@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #define NOMINMAX
 #include <Windows.h>
 #include <d3d11.h>
@@ -164,7 +164,10 @@ float4 PSLens(PanelOut i) : SV_Target {
     float ny = abs(g.y);
     float ctl = saturate(extra.y);
     float edgeK = saturate(edge.y);
-    float aBlack = lerp((0.86 - edge.x * ny) * edgeK, 0.30f, ctl);
+    // A control is a small convex piece of glass, not a slab: the capture's switch knob
+    // has a bright rim (0.95 white, 4-5 pt) and almost no dark line, so the two terms
+    // swap emphasis at ctl = 1.
+    float aBlack = lerp((0.86 - edge.x * ny) * edgeK, 0.10f, ctl);
     float hairBox = 1.0 - smoothstep(0.14, 0.20, abs(dp - 0.52));
     float lineA = saturate(aBlack * hairBox);
 
@@ -271,9 +274,11 @@ float4 PSLens(PanelOut i) : SV_Target {
     // The rim: white, and only where the normal has a vertical component (alpha
     // 0.47 * |ny|^2.8 in light, 0.22 in dark, zero on the left and right edges).
     float aWhite = prm.z * pow(ny, 2.8) * (g.y > 0.0 ? 1.10 : 1.0) * edgeK;
-    aWhite = lerp(aWhite, 0.50f, ctl);
-    float rx = dp - 0.6;
-    float rim = rx < 0.0 ? exp(-rx * rx / 0.18) : exp(-rx / 1.05);
+    aWhite = lerp(aWhite, 0.85f, ctl);
+    // A control carries a wide bright rim - the capture's knob is 0.95 white over 4-5 pt,
+    // where a panel's is a one-pixel edge - so the rim tail widens with ctl.
+    float rx = dp - lerp(0.6f, 1.6f, ctl);
+    float rim = rx < 0.0 ? exp(-rx * rx / lerp(0.18f, 0.9f, ctl)) : exp(-rx / lerp(1.05f, 2.6f, ctl));
     float3 lin = SrgbToLinear(col);
     lin += aWhite * (1.0 - lin) * rim;
     col = LinearToSrgb(lin);
