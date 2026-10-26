@@ -11,8 +11,8 @@
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
-#include "../../../opal/backend/dx11_backend.h"
-#include "../../../opal/glass/glass_renderer.h"
+#include "../../opal/backend/dx11_backend.h"
+#include "../../opal/glass/glass_renderer.h"
 #include "../fonts/FontsGenerated.h"
 
 #include "../fonts/FontsGenerated.h"           // kept as a fallback

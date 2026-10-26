@@ -165,12 +165,12 @@ float4 PSLens(PanelOut i) : SV_Target {
     float ctl = saturate(extra.y);
     float edgeK = saturate(edge.y);
     float aBlack = lerp((0.86 - edge.x * ny) * edgeK, 0.30f, ctl);
-    float hairBox = 1.0 - smoothstep(0.17, 0.24, abs(dp - 0.68));
+    float hairBox = 1.0 - smoothstep(0.14, 0.20, abs(dp - 0.52));
     float lineA = saturate(aBlack * hairBox);
 
     // The body is inset 0.95 pt with a 0.30 pt ramp: the capture's fill only settles two
     // device pixels inside the boundary, and its line sits in between.
-    float cov = saturate(0.5 - (d + 0.95) / 0.30) * saturate(extra.x);   // HARDCODED TEST
+    float cov = saturate(0.5 - (d + edge.w) / 0.30) * saturate(extra.x);
     if (cov <= 0.0) {
         // Outside: the soft cast shadow, and the hairline if it reaches out here.
         float soft = saturate(1.0 - d / 14.0);
