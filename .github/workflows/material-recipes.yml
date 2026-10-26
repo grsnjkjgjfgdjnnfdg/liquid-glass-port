@@ -1,0 +1,64 @@
+name: material-recipes
+
+# Liquid Glass parameters live in `.materialrecipe` files - small binary plists that the
+# material runtime reads at load time. They are data, not code, so they ship as ordinary
+# files on disk even though the frameworks themselves are in the dyld shared cache.
+# A macOS runner therefore has them; no installer surgery is involved.
+on:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    steps:
+      - name: Find every material recipe on the host
+        shell: bash
+        run: |
+          set +e
+          mkdir -p out
+          echo "runner=${{ matrix.os }}" > out/summary.txt
+          sw_vers >> out/summary.txt 2>&1
+          echo "--- xcode ---" >> out/summary.txt
+          xcodebuild -version >> out/summary.txt 2>&1
+          echo "--- simulator runtimes ---" >> out/summary.txt
+          xcrun simctl list runtimes >> out/summary.txt 2>&1
+
+          # 1. recipes anywhere under the system (they are small; take them all)
+          find /System/Library /System/Applications /Library -name '*.materialrecipe' \
+               2>/dev/null | head -200 > out/recipes.txt
+          find /System/Library -name '*.visualstyleset' 2>/dev/null | head -100 \
+               >> out/recipes.txt
+          wc -l out/recipes.txt >> out/summary.txt
+
+          i=0
+          while read -r f; do
+            [ -f "$f" ] || continue
+            i=$((i+1))
+            safe=$(echo "$f" | tr '/' '_')
+            plutil -convert xml1 -o "out/$safe.plist" "$f" 2>/dev/null \
+              || cp "$f" "out/$safe.bin"
+            echo "$f -> out/$safe.plist" >> out/index.txt
+          done < out/recipes.txt
+          echo "decoded $i files" >> out/summary.txt
+
+          # 2. what the glass filters are called in this OS, straight from the binary
+          QC=/System/Library/Frameworks/QuartzCore.framework/QuartzCore
+          CM=/System/Library/PrivateFrameworks/CoreMaterial.framework/CoreMaterial
+          for b in "$QC" "$CM"; do
+            [ -f "$b" ] || continue
+            echo "=== $b" >> out/strings.txt
+            strings -a "$b" | grep -iE 'glass|lens|refract|specular|bevel|sdf|squircle' \
+              | sort -u | head -400 >> out/strings.txt
+          done
+
+          ls -la out | head -30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recipes-${{ matrix.os }}
+          path: out/
+          if-no-files-found: warn
