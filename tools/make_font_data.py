@@ -40,6 +40,9 @@ def main() -> int:
     out.append(emit("sfp_text_bold_data", bold))
     out.append(emit("sfp_display_bold_data", bold))
     out.append(emit("sfp_display_semibold_data", semibold))
+    # the legacy names the fallback font path still uses
+    out.append(emit("sfpro_font_data", regular))
+    out.append(emit("sfpro_semibold_data", semibold))
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text("".join(out), encoding="utf-8")
     print(f"wrote {args.out}")
